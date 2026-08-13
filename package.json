@@ -1,0 +1,16 @@
+{
+  "name": "assault-mapmaker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pick a real-world area at Assault board size and orientation, pull DEM data, render it into Assault map language.",
+  "scripts": {
+    "start": "node server.js",
+    "render": "node render.js",
+    "build": "node build.js",
+    "preview": "node serve-dist.js"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0"
+  }
+}
