@@ -4,10 +4,10 @@
 
 **Public source:** <https://github.com/CaliTarheel/assault-mapmaker>
 
-Assault Map Maker turns a real-world 6.93 × 5.25 km footprint into a playable
-32 × 21 hex terrain board using elevation and OpenStreetMap data. It supports
-board rotation, terrain classification, level and steep-slope diagnostics, and
-PNG/JSON export.
+Assault Map Maker turns real-world terrain into one 32 × 21 hex board or a
+seamless mosaic up to 4 × 4 boards using elevation and OpenStreetMap data. The
+map footprint, continuous terrain render, seam guides, diagnostics, and PNG/JSON
+exports all expand with the selected board array.
 
 The Sites application lives in `sites-app/` in the public repository. The
 repository root also preserves the earlier standalone implementation and its

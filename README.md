@@ -8,6 +8,10 @@ The exact source for the current Sites app is in [`sites-app/`](sites-app/).
 The repository root preserves the earlier standalone implementation and its
 GitHub Pages deployment.
 
+The current Sites app supports seamless mosaics from 1 × 1 through 4 × 4
+boards. Its real-world footprint, terrain render, seam guides, and PNG/JSON
+exports all expand with the selected board array.
+
 Pick a real place, at Assault board size and orientation, and get its terrain rendered
 in Assault's own map language: five ink colours, contour strokes on every colour change,
 woods, towns, roads, water and marsh, on the hex grid the module already uses.

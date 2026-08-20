@@ -18,6 +18,7 @@ const ctx = canvas.getContext('2d');
 
 const state = {
   lat: 50.62, lon: 9.62, bearing: 0,
+  boardCols: 1, boardRows: 1,
   last: null,          // most recent render result, for export
 };
 
@@ -41,18 +42,33 @@ function buildLayers() {
 
 const footprint = L.polygon([], { color: '#e0a23c', weight: 2, fillOpacity: 0.06 }).addTo(map);
 const upArrow = L.polyline([], { color: '#e0a23c', weight: 2, opacity: 0.9, dashArray: '5 4' }).addTo(map);
+const footprintSeams = L.layerGroup().addTo(map);
 
 function currentPlacement(hexPx) {
-  return new Placement(state.lat, state.lon, state.bearing, hexPx);
+  return new Placement(state.lat, state.lon, state.bearing, hexPx, state.boardCols, state.boardRows);
 }
 
 function drawFootprint() {
   const p = currentPlacement(78.6);
   footprint.setLatLngs(p.corners());
   const g = p.g;
+  footprintSeams.clearLayers();
+  for (let col = 1; col < g.boardCols; col++) {
+    const x = g.boardWidthPx * col;
+    L.polyline([p.pixelToLatLon(x, 0), p.pixelToLatLon(x, g.h)], {
+      color: '#e0a23c', weight: 1.5, opacity: 0.82, dashArray: '7 5', interactive: false,
+    }).addTo(footprintSeams);
+  }
+  for (let row = 1; row < g.boardRows; row++) {
+    const y = g.boardHeightPx * row;
+    L.polyline([p.pixelToLatLon(0, y), p.pixelToLatLon(g.w, y)], {
+      color: '#e0a23c', weight: 1.5, opacity: 0.82, dashArray: '7 5', interactive: false,
+    }).addTo(footprintSeams);
+  }
   upArrow.setLatLngs([p.pixelToLatLon(g.w / 2, g.h / 2), p.pixelToLatLon(g.w / 2, 0)]);
   $('lat').value = state.lat.toFixed(5);
   $('lon').value = state.lon.toFixed(5);
+  $('layoutSummary').textContent = `${g.boardCols} × ${g.boardRows} ${g.boardCols * g.boardRows === 1 ? 'board' : 'boards'} · ${g.cols} × ${g.rows} hex field · ${(BOARD_W_M * g.boardCols / 1000).toFixed(2)} × ${(BOARD_H_M * g.boardRows / 1000).toFixed(2)} km`;
 }
 
 map.on('move', () => {
@@ -86,6 +102,19 @@ $('bearingNum').onchange = e => setBearing(+e.target.value);
 document.querySelectorAll('[data-bearing]').forEach(b => {
   b.onclick = () => setBearing(+b.dataset.bearing);
 });
+
+function setBoardLayout() {
+  state.boardCols = Math.max(1, Math.min(4, +$('boardCols').value || 1));
+  state.boardRows = Math.max(1, Math.min(4, +$('boardRows').value || 1));
+  state.last = null;
+  $('render').textContent = state.boardCols * state.boardRows === 1
+    ? 'render board'
+    : `render ${state.boardCols} × ${state.boardRows} boards`;
+  busy('layout updated — render the enlarged footprint');
+  drawFootprint();
+}
+$('boardCols').onchange = setBoardLayout;
+$('boardRows').onchange = setBoardLayout;
 
 $('datumMode').onchange = e => { $('baseM').disabled = e.target.value !== 'manual'; };
 
@@ -230,6 +259,7 @@ async function render({ hexPx } = {}) {
   if ($('showLevels').checked) drawLevels(hexes, g);
   if ($('showTerrain').checked) drawTerrain(hexes, g);
   if ($('showDrift').checked) markDrift(hexes, g);
+  drawBoardSeams(g);
 
   state.last = { placement, g, base, interval, stats, fields, hexes, report, tiles, zoom, featureCounts };
   showStats(state.last);
@@ -283,15 +313,51 @@ function markDrift(hexes, g) {
   }
 }
 
+function drawBoardSeams(g) {
+  if (g.boardCols === 1 && g.boardRows === 1) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+  ctx.lineWidth = Math.max(2, g.hexFlatPx / 12);
+  ctx.setLineDash([Math.max(10, g.hexFlatPx * 0.45), Math.max(7, g.hexFlatPx * 0.3)]);
+  ctx.beginPath();
+  for (let col = 1; col < g.boardCols; col++) {
+    const x = g.boardWidthPx * col;
+    ctx.moveTo(x, 0); ctx.lineTo(x, g.h);
+  }
+  for (let row = 1; row < g.boardRows; row++) {
+    const y = g.boardHeightPx * row;
+    ctx.moveTo(0, y); ctx.lineTo(g.w, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = `700 ${Math.max(12, g.hexFlatPx * 0.24)}px "Segoe UI", sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  for (let row = 0; row < g.boardRows; row++) {
+    for (let col = 0; col < g.boardCols; col++) {
+      const label = `BOARD ${row + 1}-${col + 1}`;
+      const x = col * g.boardWidthPx + Math.max(8, g.hexFlatPx * 0.18);
+      const y = (row + 1) * g.boardHeightPx - Math.max(8, g.hexFlatPx * 0.18);
+      const width = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(18,18,14,0.66)';
+      ctx.fillRect(x - 4, y - Math.max(16, g.hexFlatPx * 0.3), width + 8, Math.max(18, g.hexFlatPx * 0.34));
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText(label, x, y);
+    }
+  }
+  ctx.restore();
+}
+
 const TERRAIN_ORDER = ['clear', 'woods', 'town', 'urban', 'lake', 'marsh'];
 
 function showStats(r) {
-  const { stats, base, interval, fields, report, tiles, zoom } = r;
+  const { stats, base, interval, fields, report, tiles, zoom, g } = r;
   const needed = (stats.max - base) / interval;
   const cell = (label, value, warn = false) =>
     `<div class="${warn ? 'warn' : ''}"><span>${label}</span> <b>${value}</b></div>`;
 
   $('stats').innerHTML = [
+    cell('board mosaic', `${g.boardCols} × ${g.boardRows} · ${g.cols} × ${g.rows} hexes`),
     cell('ground', `${stats.min.toFixed(0)}–${stats.max.toFixed(0)} m asl`),
     cell('level 0 datum', `${base.toFixed(0)} m`),
     cell('relief', `${(stats.max - base).toFixed(0)} m`),
@@ -328,7 +394,7 @@ $('exportPng').onclick = async () => {
   busy('rendering at board scale…');
   const r = await render({ hexPx: 78.6 });
   const a = document.createElement('a');
-  a.download = `assault_${r.placement.lat.toFixed(4)}_${r.placement.lon.toFixed(4)}_${r.placement.bearing}.png`;
+  a.download = `assault_${r.placement.lat.toFixed(4)}_${r.placement.lon.toFixed(4)}_${r.placement.bearing}_${r.g.boardCols}x${r.g.boardRows}.png`;
   a.href = canvas.toDataURL('image/png');
   a.click();
   busy('');
@@ -339,7 +405,13 @@ $('exportJson').onclick = () => {
   if (!r) return alert('render a board first');
   const data = {
     placement: { lat: r.placement.lat, lon: r.placement.lon, bearing: r.placement.bearing },
-    board: { cols: r.g.cols, rows: r.g.rows, widthM: BOARD_W_M, heightM: BOARD_H_M },
+    board: {
+      boardsWide: r.g.boardCols, boardsHigh: r.g.boardRows,
+      boardCount: r.g.boardCols * r.g.boardRows,
+      columnsPerBoard: 32, rowsPerBoard: 21,
+      cols: r.g.cols, rows: r.g.rows,
+      widthM: BOARD_W_M * r.g.boardCols, heightM: BOARD_H_M * r.g.boardRows,
+    },
     vertical: { base: r.base, interval: r.interval, min: r.stats.min, max: r.stats.max },
     report: r.report,
     hexes: r.hexes.map(h => ({
@@ -351,7 +423,7 @@ $('exportJson').onclick = () => {
     })),
   };
   const a = document.createElement('a');
-  a.download = `assault_${r.placement.lat.toFixed(4)}_${r.placement.lon.toFixed(4)}.json`;
+  a.download = `assault_${r.placement.lat.toFixed(4)}_${r.placement.lon.toFixed(4)}_${r.g.boardCols}x${r.g.boardRows}.json`;
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
   a.click();
 };
