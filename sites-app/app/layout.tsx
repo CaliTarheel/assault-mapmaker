@@ -29,10 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: base,
     title: "Assault Map Maker — Real terrain, game-ready boards",
     description:
-      "Turn any real-world 6.93 × 5.25 km area into an Assault terrain board using elevation and OpenStreetMap data.",
+      "Turn real-world terrain into one Assault board or a seamless multi-board mosaic using elevation and OpenStreetMap data.",
     openGraph: {
       title: "Assault Map Maker",
-      description: "Real terrain. Game-ready boards.",
+      description: "Real terrain. Seamless single- and multi-board maps.",
       type: "website",
       url: base,
       images: [
@@ -47,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "Assault Map Maker",
-      description: "Real terrain. Game-ready boards.",
+      description: "Real terrain. Seamless single- and multi-board maps.",
       images: [socialImage],
     },
   };

@@ -18,22 +18,33 @@ export const ROWS = 21;
 export const BOARD_W_M = COLS * COL_PITCH_M;                // 6928.2 m
 export const BOARD_H_M = ROWS * ROW_PITCH_M;                // 5250 m
 export const Y0_FRACTION = 37 / 78.6;                       // module's y0 / dy
+export const MAX_BOARD_LAYOUT = 4;
 
 export const M_PER_LEVEL = 25;
 export const MAX_LEVEL = 8;
 
-export function boardGeometry(hexFlatPx = 78.6) {
+export function clampBoardCount(value) {
+  return Math.max(1, Math.min(MAX_BOARD_LAYOUT, Math.round(Number(value) || 1)));
+}
+
+export function boardGeometry(hexFlatPx = 78.6, boardCols = 1, boardRows = 1) {
+  boardCols = clampBoardCount(boardCols);
+  boardRows = clampBoardCount(boardRows);
   const mPerPx = HEX_FLAT_M / hexFlatPx;
   const rowPitch = hexFlatPx;
   const colPitch = COL_PITCH_M / mPerPx;
   const R = HEX_R_M / mPerPx;
+  const boardWidthPx = Math.round(COLS * colPitch);
+  const boardHeightPx = Math.round(ROWS * rowPitch);
   return {
     mPerPx, hexFlatPx, rowPitch, colPitch, R,
     halfFlat: hexFlatPx / 2,
     y0: Y0_FRACTION * rowPitch,
-    w: Math.round(COLS * colPitch),
-    h: Math.round(ROWS * rowPitch),
-    cols: COLS, rows: ROWS,
+    w: boardWidthPx * boardCols,
+    h: boardHeightPx * boardRows,
+    boardWidthPx, boardHeightPx,
+    boardCols, boardRows,
+    cols: COLS * boardCols, rows: ROWS * boardRows,
   };
 }
 
@@ -65,9 +76,9 @@ export const hexId = (col, row) =>
 // A board placed on the world: centre lat/lon plus a bearing for board "up",
 // in degrees clockwise from true north.
 export class Placement {
-  constructor(lat, lon, bearing = 0, hexFlatPx = 78.6) {
+  constructor(lat, lon, bearing = 0, hexFlatPx = 78.6, boardCols = 1, boardRows = 1) {
     this.lat = lat; this.lon = lon; this.bearing = bearing;
-    this.g = boardGeometry(hexFlatPx);
+    this.g = boardGeometry(hexFlatPx, boardCols, boardRows);
   }
 
   // Board pixel -> metres east/north of board centre.

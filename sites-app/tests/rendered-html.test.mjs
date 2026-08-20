@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { BOARD_H_M, BOARD_W_M, COLS, ROWS, Placement, boardGeometry } from "../public/mapmaker/lib/board.js";
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -28,4 +29,22 @@ test("the interactive map credits its creator and public source", async () => {
   assert.match(html, /mailto:rider\.sg@gmail\.com/);
   assert.match(html, /github\.com\/CaliTarheel\/assault-mapmaker/);
   assert.match(html, /MIT licensed/);
+});
+
+test("multi-board mosaics scale the playable field and geographic footprint", async () => {
+  const geometry = boardGeometry(78.6, 4, 3);
+  assert.equal(geometry.boardCols, 4);
+  assert.equal(geometry.boardRows, 3);
+  assert.equal(geometry.cols, COLS * 4);
+  assert.equal(geometry.rows, ROWS * 3);
+  assert.equal(geometry.w, geometry.boardWidthPx * 4);
+  assert.equal(geometry.h, geometry.boardHeightPx * 3);
+
+  const placement = new Placement(50.62, 9.62, 0, 78.6, 4, 3);
+  assert.ok(Math.abs(placement.g.w * placement.g.mPerPx - BOARD_W_M * 4) < 8);
+  assert.ok(Math.abs(placement.g.h * placement.g.mPerPx - BOARD_H_M * 3) < 8);
+
+  const html = await readFile(new URL("../public/mapmaker/index.html", import.meta.url), "utf8");
+  assert.match(html, /id="boardCols"/);
+  assert.match(html, /id="boardRows"/);
 });
