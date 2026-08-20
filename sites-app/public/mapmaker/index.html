@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assault map maker — terrain</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Assault map maker <span class="sub">terrain from DEM</span></h1>
+  <div class="where">
+    <label>lat <input id="lat" type="number" step="0.0001" value="50.62"></label>
+    <label>lon <input id="lon" type="number" step="0.0001" value="9.62"></label>
+    <button id="goto">go</button>
+    <button id="usecentre" title="Move the board to the middle of the map view">board to view centre</button>
+  </div>
+</header>
+
+<main>
+  <section class="pane map-pane">
+    <div id="map"></div>
+    <div class="bearing-bar">
+      <label>bearing <input id="bearing" type="range" min="0" max="359" value="0"></label>
+      <input id="bearingNum" type="number" min="0" max="359" value="0"> °
+      <button data-bearing="0">N</button>
+      <button data-bearing="90">E</button>
+      <button data-bearing="180">S</button>
+      <button data-bearing="270">W</button>
+      <span class="spacer"></span>
+      <label><input id="follow" type="checkbox" checked> board follows map centre</label>
+    </div>
+  </section>
+
+  <section class="pane board-pane">
+    <div class="board-wrap"><canvas id="board"></canvas></div>
+
+    <div class="controls">
+      <div class="row">
+        <button id="render" class="primary">render board</button>
+        <button id="exportPng">export png</button>
+        <button id="exportJson">export json</button>
+        <span id="busy" class="busy"></span>
+      </div>
+
+      <div class="row">
+        <label>datum
+          <select id="datumMode">
+            <option value="min">board minimum (level 0)</option>
+            <option value="p2">2nd percentile</option>
+            <option value="manual">manual</option>
+          </select>
+        </label>
+        <label>base m <input id="baseM" type="number" step="1" value="0" disabled></label>
+        <label>m / level <input id="interval" type="number" step="1" value="25" min="5"></label>
+      </div>
+
+      <div class="row">
+        <label>smoothing <input id="smooth" type="range" min="0" max="8" value="3"></label>
+        <label>min feature <input id="minregion" type="range" min="0" max="1200" step="20" value="260"></label>
+        <label>hex px <input id="hexpx" type="number" value="46" min="20" max="120" step="2"></label>
+        <label>sea level m <input id="sealevel" type="number" value="0" step="1"
+          title="Ground at or below this is held flat and drawn as water. Lower it for polders or an inland basin."></label>
+      </div>
+
+      <div class="row toggles">
+        <label><input id="showGrid" type="checkbox" checked> hex grid</label>
+        <label><input id="showLevels" type="checkbox" checked> levels</label>
+        <label><input id="showSteep" type="checkbox" checked> steep slopes</label>
+        <label><input id="showDrift" type="checkbox"> flag notation drift</label>
+      </div>
+
+      <div class="row toggles">
+        <label><input id="useFeatures" type="checkbox" checked> woods, water, towns, roads</label>
+        <label><input id="useTracks" type="checkbox"> farm tracks</label>
+        <label><input id="useMinor" type="checkbox"> village streets</label>
+        <label><input id="showTerrain" type="checkbox"> terrain letters</label>
+      </div>
+
+      <div id="stats" class="stats"></div>
+      <div id="legend" class="legend"></div>
+      <div class="credits">
+        <span id="modeNote"></span>
+        <span id="featureNote" class="note"></span>
+        <span>elevation <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a>
+          · features <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+          via <a href="https://overpass-api.de/" target="_blank" rel="noopener">Overpass</a>
+          · <em>Assault</em> is a Game Designers' Workshop game; this tool only generates terrain in its map notation</span>
+        <span class="creator-credit">Created by <strong>Stephen G. Rider</strong>
+          · <a href="mailto:rider.sg@gmail.com">rider.sg@gmail.com</a>
+          · <a href="https://github.com/CaliTarheel/assault-mapmaker" target="_blank" rel="noopener">source on GitHub</a>
+          · MIT licensed—retain the copyright and license notice when reusing or customizing</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="vendor/leaflet.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
